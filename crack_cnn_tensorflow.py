@@ -65,6 +65,7 @@ def model():
 
 # 训练
 def train_model():
+
     output = model()
     # loss 损失数值
     #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output, labels=Y))
@@ -80,12 +81,12 @@ def train_model():
     saver = tf.train.Saver()
 
     with tf.Session() as sess:
-        # tmp = tf.train.latest_checkpoint('model/')
-        # saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
-        # print(tmp)
+        tmp = tf.train.latest_checkpoint('model/')
+        saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
+        print(tmp)
 
         #当直接读取模型时，需要把变量初始化去掉
-        sess.run(tf.global_variables_initializer())
+        #sess.run(tf.global_variables_initializer())
 
         step = 0
         batch_id=0
@@ -105,7 +106,7 @@ def train_model():
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 print(step, acc)
                 # 如果准确率大于99%,保存模型,完成训练
-                if acc > 0.9:
+                if acc > 0.98:
                     saver.save(sess, "./model/crack_capcha.model2", global_step=step)
                     break
             step += 1
@@ -142,24 +143,34 @@ def crack_captcha(captcha_images):
 
         #return vec2text(vector)
 
+def train():
+    begin=time.time()
+    train_model()
+    end=time.time()
+    print('time use: {}'.format(end-begin))
+
+def test():
+    import os
+    dir = r'D:\project\图像识别\image\d_s\test'
+    # dir=r'D:\project\图像识别\image\tmp'
+    list_dir = os.listdir(dir)
+    img_path = os.path.join(dir, list_dir[0])
+    reals = [re.findall(r'(\w{4})\.png', img_name)[0] for img_name in list_dir[:100]]
+    imgs = [get_img(os.path.join(dir, img_name)) for img_name in list_dir[:100]]
+    predicts = crack_captcha(imgs)
+    # real=re.findall(r'(\w{4})\.png',img_path)[0]
+    for r in zip(predicts, reals, list_dir[:100]):
+        predict = ''.join([str(i) for i in r[0]])
+
+        if predict.lower() != r[1].lower():
+            print('predic={},real={},img_path={}'.format(predict, r[1], r[2]))
+
 
 if __name__ == '__main__':
-    # begin=time.time()
-    # train_model()
-    # end=time.time()
-    # print('time use: {}'.format(end-begin))
-    import os
-    dir=r'D:\project\图像识别\image\test'
-    #dir=r'D:\project\图像识别\image\tmp'
-    list_dir = os.listdir(dir)
-    img_path=os.path.join(dir,list_dir[0])
-    reals=[re.findall(r'(\w{4})\.png',img_name)[0] for img_name in list_dir[:100]]
-    imgs=[get_img(os.path.join(dir,img_name)) for img_name in list_dir[:100]]
-    predicts=crack_captcha(imgs)
-    #real=re.findall(r'(\w{4})\.png',img_path)[0]
-    for r in zip(predicts,reals,list_dir[:100]):
-        predict=''.join([str(i) for i in r[0]])
-        print('predic={},real={},img_path={}'.format(predict,r[1],r[2]))
+    #train()
+    test()
+
+
 
 
 
