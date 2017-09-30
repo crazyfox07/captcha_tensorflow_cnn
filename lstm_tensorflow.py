@@ -66,13 +66,6 @@ def get_lstm_cell():
     lstm_cell = rnn.DropoutWrapper(cell=lstm_cell, input_keep_prob=1.0, output_keep_prob=keep_prob)
     return lstm_cell
 
-
-mlstm_cell = tf.contrib.rnn.MultiRNNCell([get_lstm_cell() for i in range(layer_num)], state_is_tuple=True)
-
-# **步骤5：用全零来初始化state
-init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
-
-
 # **步骤6：方法一，调用 dynamic_rnn() 来让我们构建好的网络运行起来
 # ** 当 time_major==False 时， outputs.shape = [batch_size, timestep_size, hidden_size]
 # ** 所以，可以取 h_state = outputs[:, -1, :] 作为最后输出
@@ -86,6 +79,9 @@ init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
 # 通过查看文档你会发现， RNNCell 都提供了一个 __call__()函数（见最后附），我们可以用它来展开实现LSTM按时间步迭代。
 # **步骤6：方法二，按时间步展开计算
 def output():
+    mlstm_cell = tf.contrib.rnn.MultiRNNCell([get_lstm_cell() for i in range(layer_num)], state_is_tuple=True)
+    # **步骤5：用全零来初始化state
+    init_state = mlstm_cell.zero_state(batch_size, dtype=tf.float32)
     outputs = list()
     state = init_state
     with tf.variable_scope('RNN'):
