@@ -50,7 +50,7 @@ keep_prob = tf.placeholder(tf.float32)
 # 下面几个步骤是实现 RNN / LSTM 的关键
 ####################################################################
 # **步骤1：RNN 的输入shape = (batch_size, timestep_size, input_size)
-X = tf.reshape(_X, [-1, input_size, timestep_size])
+X = tf.reshape(_X, [-1, timestep_size, input_size])
 
 
 #
