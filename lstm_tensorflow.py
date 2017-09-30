@@ -6,13 +6,15 @@ Description:
 Author: liuxuewen
 Date: 2017/9/29 16:34
 """
+import os
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.contrib import rnn
 from tensorflow.examples.tutorials.mnist import input_data
 import re
 # 设置 GPU 按需增长
-from util import get_next_batch
+from util import get_next_batch, get_img
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -138,23 +140,21 @@ def train():
 
 def test():
     y_pre = output()
+    img_path = r'D:\project\图像识别\image\chinese\test2'
     # 计算测试数据的准确率
     saver = tf.train.Saver()
     tmp = tf.train.latest_checkpoint('model/')
     saver.restore(sess, tmp)
-    batch = get_next_batch(batch_size)
 
-    # print("test accuracy %g"% sess.run(accuracy, feed_dict={
-    #     _X: batch[0], y: batch[1], keep_prob: 1.0}))
-
-    a, b = batch
-    predict = sess.run(y_pre, feed_dict={_X: a, keep_prob: 1.0})
+    imgs=os.listdir(img_path)
+    [print(img) for img in imgs]
+    imgs=[get_img(os.path.join(img_path,img_name)) for img_name in imgs]
+    imgs=np.reshape(imgs,(-1,256))
+    predict = sess.run(y_pre, feed_dict={_X: imgs, keep_prob: 1.0})
     predict = sess.run(tf.argmax(predict, 1))
-    real = sess.run(tf.argmax(b, 1))
 
-    print(b)
     print(predict)
-    print(real)
+    #print(real)
 
 
 #train()
