@@ -1,3 +1,4 @@
 *.pyc
 model
 *.png
+crack_cnn_tensorflow.py

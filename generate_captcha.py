@@ -15,8 +15,9 @@ import numpy as np
 import time
 import hashlib
 
-from util import CHARS
+#from util import CHARS
 
+CHARS=string.digits
 
 def md5_encrypt(text):
     m=hashlib.md5()
@@ -25,15 +26,15 @@ def md5_encrypt(text):
 
 def get_text():
     chars=CHARS
-    text=random.sample(chars,4)
+    text=random.sample(chars,1)
     return ''.join(text)
 
 def gen_captcha():
-    for i in range(100000):
+    for i in range(1000):
         m=md5_encrypt(str(time.time()))
-        image=ImageCaptcha(width=160,height=60)
+        image=ImageCaptcha(width=64,height=64)
         text=get_text()
-        image.write(text,r'D:\project\图像识别\image\train\{}_{}.png'.format(m,text))
+        image.write(text,r'D:\project\图像识别\image\train2\{}_{}.png'.format(m,text))
 
 
 

@@ -21,24 +21,32 @@ b_alpha = 0.1
 
 def add_layer(input=None, w_shape=None, b_shape=None, conv2d=False, active_func=None, name=None):
     # 前两维是patch的大小，第三维时输入通道的数目，最后一维是输出通道的数目。我们对每个输出通道加上了偏置(bias)
-    w = tf.Variable(w_alpha * tf.random_normal(w_shape))
-    b = tf.Variable(b_alpha * tf.random_normal(b_shape))
-    # 卷基层与池化层
-    if conv2d and active_func:
-        conv = active_func(tf.nn.bias_add(tf.nn.conv2d(input, w, strides=[1, 1, 1, 1], padding='SAME'), b))
-        conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        conv = tf.nn.dropout(conv, keep_prob=keep_prob)
-        return conv
-    # 全连接层
-    elif active_func:
-        dense = tf.reshape(input, [-1, w_shape[0]])
-        dense = active_func(tf.add(tf.matmul(dense, w), b))
-        dense = tf.nn.dropout(dense, keep_prob=keep_prob)
-        return dense
-    # 输出层
-    else:
-        out = tf.add(tf.matmul(input, w), b)
-        return out
+    with tf.name_scope(name):
+        with tf.name_scope('weights'):
+            w = tf.Variable(w_alpha * tf.random_normal(w_shape))
+            #tf.summary.histogram(name+'/weights',w)
+        with tf.name_scope('biases'):
+            b = tf.Variable(b_alpha * tf.random_normal(b_shape))
+            #tf.summary.histogram(name+'/biases',b)
+        # 卷基层与池化层
+        if conv2d and active_func:
+            conv = active_func(tf.nn.bias_add(tf.nn.conv2d(input, w, strides=[1, 1, 1, 1], padding='SAME'), b))
+            #conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            conv = tf.nn.dropout(conv, keep_prob=keep_prob)
+            #tf.summary.histogram(name + '/conv', conv)
+            return conv
+        # 全连接层
+        elif active_func:
+            dense = tf.reshape(input, [-1, w_shape[0]])
+            dense = active_func(tf.add(tf.matmul(dense, w), b))
+            dense = tf.nn.dropout(dense, keep_prob=keep_prob)
+            #tf.summary.histogram(name+'/dense',dense)
+            return dense
+        # 输出层
+        else:
+            out = tf.add(tf.matmul(input, w), b)
+            #tf.summary.histogram(name+'/output',out)
+            return out
 
 
 # 定义模型
@@ -53,9 +61,9 @@ def model():
                        name='layer2')
     # 第三层
     layer3 = add_layer(input=layer2, w_shape=[3, 3, 64, 64], b_shape=[64], conv2d=True, active_func=tf.nn.relu,
-                       name='layer2')
+                       name='layer3')
     # 全连接层
-    layer_full = add_layer(input=layer3, w_shape=[8 * 20 * 64, 1024], b_shape=[1024], active_func=tf.nn.relu,
+    layer_full = add_layer(input=layer3, w_shape=[16 * 16 * 64, 1024], b_shape=[1024], active_func=tf.nn.relu,
                            name='layer_full')
     # 输出层
     layer_out = add_layer(input=layer_full, w_shape=[1024, LEN_CHAR_SET * LEN_CAPTCHA],
@@ -70,6 +78,7 @@ def train_model():
     # loss 损失数值
     #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output, labels=Y))
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=output, labels=Y))
+    tf.summary.scalar('loss',loss)
     # optimizer 为了加快训练 learning_rate 应该开始大，然后慢慢衰
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
     predict = tf.reshape(output, [-1, LEN_CAPTCHA, LEN_CHAR_SET])
@@ -77,37 +86,41 @@ def train_model():
     max_idx_l = tf.argmax(tf.reshape(Y, [-1, LEN_CAPTCHA, LEN_CHAR_SET]), 2)
     correct_pred = tf.equal(max_idx_p, max_idx_l)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    #tf.summary.scalar('accuracy',accuracy)
+
 
     saver = tf.train.Saver()
 
     with tf.Session() as sess:
-        tmp = tf.train.latest_checkpoint('model/')
-        saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
-        print(tmp)
+        # 合并到Summary中
+        #merged = tf.summary.merge_all()
+        # 选定可视化存储目录
+        #writer = tf.summary.FileWriter(r"D:\log\tensorflow", sess.graph)
+
+        #tmp = tf.train.latest_checkpoint('model/')
+        #saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
+        #print(tmp)
 
         #当直接读取模型时，需要把变量初始化去掉
-        #sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer())
 
         step = 0
-        batch_id=0
-        while True:
-            batch_x, batch_y = get_next_batch(64,batch_id)
-            if batch_x is None:
-                batch_id = 0
-                batch_x, batch_y = get_next_batch(64, batch_id)
-            batch_id+=1
 
+        while True:
+            batch_x, batch_y = get_next_batch(1000)
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
             #print(step, loss_)
 
             # 每100 step计算一次准确率
             if step % 100 == 0:
-                batch_x_test, batch_y_test = get_next_batch(64)
-                acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
-                print(step, acc)
+                batch_x_test, batch_y_test = get_next_batch(1000)
+                #accuracy = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
+                #writer.add_summary(result,step)
+                acc=sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 # 如果准确率大于99%,保存模型,完成训练
-                if acc > 0.98:
-                    saver.save(sess, "./model/crack_capcha.model2", global_step=step)
+                print(acc)
+                if acc > 0.90:
+                    saver.save(sess, "./model/crack_capcha.model3", global_step=step)
                     break
             step += 1
 
@@ -151,19 +164,19 @@ def train():
 
 def test():
     import os
-    dir = r'D:\project\图像识别\image\d_s\test'
+    dir = r'D:\project\图像识别\image\chinese\test2'
     # dir=r'D:\project\图像识别\image\tmp'
     list_dir = os.listdir(dir)
     img_path = os.path.join(dir, list_dir[0])
-    reals = [re.findall(r'(\w{4})\.png', img_name)[0] for img_name in list_dir[:100]]
-    imgs = [get_img(os.path.join(dir, img_name)) for img_name in list_dir[:100]]
+    reals = [re.findall(r'_(\w+)\.png', img_name)[0] for img_name in list_dir]
+    imgs = [get_img(os.path.join(dir, img_name)) for img_name in list_dir]
     predicts = crack_captcha(imgs)
     # real=re.findall(r'(\w{4})\.png',img_path)[0]
-    for r in zip(predicts, reals, list_dir[:100]):
+    for r in zip(predicts, reals, list_dir):
         predict = ''.join([str(i) for i in r[0]])
 
         if predict.lower() != r[1].lower():
-            print('predic={},real={},img_path={}'.format(predict, r[1], r[2]))
+            print('predic={},real={},img_path={}'.format(predict, CHARS[int(r[1])], r[2]))
 
 
 if __name__ == '__main__':
