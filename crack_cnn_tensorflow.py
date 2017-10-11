@@ -99,12 +99,12 @@ def train_model():
         # 选定可视化存储目录
         #writer = tf.summary.FileWriter(r"D:\log\tensorflow", sess.graph)
 
-        #tmp = tf.train.latest_checkpoint('model/')
-        #saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
+        tmp = tf.train.latest_checkpoint('model/')
+        saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
         #print(tmp)
 
         #当直接读取模型时，需要把变量初始化去掉
-        sess.run(tf.global_variables_initializer())
+        #sess.run(tf.global_variables_initializer())
 
         step = 0
 
@@ -115,13 +115,13 @@ def train_model():
 
             # 每100 step计算一次准确率
             if step % 100 == 0:
-                batch_x_test, batch_y_test = get_next_batch(200,img_path=img_test_path)
+                batch_x_test, batch_y_test = get_next_batch(10,img_path=img_test_path)
                 #accuracy = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 #writer.add_summary(result,step)
                 acc=sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 # 如果准确率大于99%,保存模型,完成训练
                 print(acc)
-                if acc > 0.90:
+                if acc > 0.95:
                     saver.save(sess, "./model/crack_capcha.model", global_step=step)
                     break
             step += 1
@@ -166,7 +166,7 @@ def train():
 
 def test():
     import os
-    dir = r'D:\project\图像识别\image\chinese\test2'
+    dir = img_test_path
     # dir=r'D:\project\图像识别\image\tmp'
     list_dir = os.listdir(dir)
     img_path = os.path.join(dir, list_dir[0])
@@ -176,14 +176,13 @@ def test():
     # real=re.findall(r'(\w{4})\.png',img_path)[0]
     for r in zip(predicts, reals, list_dir):
         predict = ''.join([str(i) for i in r[0]])
+        print('predic={},real={},img_path={}'.format(predict, r[1], r[2]))
 
-        if predict.lower() != r[1].lower():
-            print('predic={},real={},img_path={}'.format(predict, CHARS[int(r[1])], r[2]))
 
 
 if __name__ == '__main__':
-    train()
-    #test()
+    #train()
+    test()
 
 
 

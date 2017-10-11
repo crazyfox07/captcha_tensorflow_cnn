@@ -27,7 +27,7 @@ LEN_CHAR_SET = len(CHARS)
 
 # img_path = r'D:\tmp'
 img_train_path=r'D:\tmp\train'
-img_test_path=r'D:\tmp\test'
+img_test_path=r'D:\tmp\test2'
 imgs_train=os.listdir(img_train_path)
 L=len(imgs_train)
 print(L)
@@ -72,12 +72,14 @@ def get_next_batch(batch_size=100,img_path=img_train_path):
     for i,img_name in enumerate(imgs_name):
         #获取标签
         try:
-            text = re.findall('\d{13}_(\w+)\.png', img_name)[0]
+            text = re.findall('_(\w+)\.png', img_name)[0]
+            img = Image.open(r'{}\{}'.format(img_path, img_name))
         except:
+            print(img_name)
             continue
        # print(text)
         # 获取图片，并灰度转换
-        img = Image.open(r'{}\{}'.format(img_path, img_name))
+
         img=img.resize((IMAGE_WIDTH,IMAGE_HEIGHT),Image.ANTIALIAS)# w代表宽度，h代表高度，最后一个参数指定采用的算法
         img = np.array(img)
         img = convert2gray(img)
