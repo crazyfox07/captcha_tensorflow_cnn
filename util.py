@@ -17,17 +17,18 @@ import json
 import random
 
 #s = common_hanzi_dict
-IMAGE_HEIGHT = 16
-IMAGE_WIDTH =16
-LEN_CAPTCHA = 1
+IMAGE_HEIGHT = 152
+IMAGE_WIDTH =40
+LEN_CAPTCHA = 4
 #CHARS = ''.join(list(s.values()))
-CHARS='捷信金融'
+CHARS='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 LEN_CHAR_SET = len(CHARS)
 
-img_path = r'D:\project\图像识别\image\chinese'
-imgs_train = os.listdir(r'{}\test2'.format(img_path))
-#imgs_train=os.listdir(r'D:\project\图像识别\image\tmp')
+# img_path = r'D:\tmp'
+img_train_path=r'D:\tmp\train'
+img_test_path=r'D:\tmp\test'
+imgs_train=os.listdir(img_train_path)
 L=len(imgs_train)
 print(L)
 print(CHARS)
@@ -45,39 +46,38 @@ def convert2gray(img):
 # 文本转向量
 def text2vec(text):
     v = np.zeros(len(CHARS) * LEN_CAPTCHA)
-    # for i, num in enumerate(text):
-    #     index = i * LEN_CHAR_SET + CHARS.index(num)
-    #     v[index] = 1
-    # return v
-    v[int(text)]=1
+    for i, num in enumerate(text):
+        index = i * LEN_CHAR_SET + CHARS.index(num)
+        v[index] = 1
     return v
+
 
 
 # 向量转文本
 def vec2text(vec):
-    # text = list()
-    # for i, j in enumerate(vec):
-    #     if j == 1:
-    #         index = i % 10
-    #         char = CHARS[index]
-    #         text.append(char)
-    # return ''.join(text)
-    for i in vec:
-        if i==1:
-            return CHARS[i]
+    text = list()
+    for i, j in enumerate(vec):
+        if j == 1:
+            index = i % LEN_CHAR_SET
+            char = CHARS[index]
+            text.append(char)
+    return ''.join(text)
 
 
 # 生成一个训练batchv  一个批次为 默认100 张图片 转换为向量
-def get_next_batch(batch_size=100):
+def get_next_batch(batch_size=100,img_path=img_train_path):
     batch_x = np.zeros([batch_size, IMAGE_HEIGHT * IMAGE_WIDTH])
     batch_y = np.zeros([batch_size, LEN_CAPTCHA * LEN_CHAR_SET])
-    imgs_name=random.sample(imgs_train,batch_size)
+    imgs_name=random.sample(os.listdir(img_path),batch_size)
     for i,img_name in enumerate(imgs_name):
-        #img_name = imgs_train[0]
-        text = re.findall('_(\d+)\.png', img_name)[0]
+        #获取标签
+        try:
+            text = re.findall('\d{13}_(\w+)\.png', img_name)[0]
+        except:
+            continue
        # print(text)
         # 获取图片，并灰度转换
-        img = Image.open(r'{}\test2\{}'.format(img_path, img_name))
+        img = Image.open(r'{}\{}'.format(img_path, img_name))
         img=img.resize((IMAGE_WIDTH,IMAGE_HEIGHT),Image.ANTIALIAS)# w代表宽度，h代表高度，最后一个参数指定采用的算法
         img = np.array(img)
         img = convert2gray(img)

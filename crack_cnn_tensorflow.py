@@ -10,7 +10,8 @@ import tensorflow as tf
 import numpy as np
 import re
 import time
-from util import IMAGE_HEIGHT, IMAGE_WIDTH, LEN_CAPTCHA, LEN_CHAR_SET, get_next_batch, vec2text, get_img, CHARS
+from util import IMAGE_HEIGHT, IMAGE_WIDTH, LEN_CAPTCHA, LEN_CHAR_SET, get_next_batch, vec2text, get_img, CHARS, \
+    img_test_path
 
 X = tf.placeholder(tf.float32,[None, IMAGE_HEIGHT * IMAGE_WIDTH])
 Y = tf.placeholder(tf.float32,[None, LEN_CAPTCHA*LEN_CHAR_SET])
@@ -31,7 +32,7 @@ def add_layer(input=None, w_shape=None, b_shape=None, conv2d=False, active_func=
         # 卷基层与池化层
         if conv2d and active_func:
             conv = active_func(tf.nn.bias_add(tf.nn.conv2d(input, w, strides=[1, 1, 1, 1], padding='SAME'), b))
-            #conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+            conv = tf.nn.max_pool(conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
             conv = tf.nn.dropout(conv, keep_prob=keep_prob)
             #tf.summary.histogram(name + '/conv', conv)
             return conv
@@ -54,6 +55,7 @@ def model():
     # 为了使得图片与计算层匹配，我们首先reshape输入图像x为4维的tensor，第2、3维对应图片的宽和高，最后一维对应颜色通道的数目。
     x = tf.reshape(X, [-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
 
+    # w_shape前两维是patch的大小，第三维时输入通道的数目，最后一维是输出通道的数目。我们对每个输出通道加上了偏置(bias)
     # 第一层
     layer1 = add_layer(input=x, w_shape=[3, 3, 1, 32], b_shape=[32], conv2d=True, active_func=tf.nn.relu, name='layer1')
     # 第二层
@@ -63,7 +65,7 @@ def model():
     layer3 = add_layer(input=layer2, w_shape=[3, 3, 64, 64], b_shape=[64], conv2d=True, active_func=tf.nn.relu,
                        name='layer3')
     # 全连接层
-    layer_full = add_layer(input=layer3, w_shape=[16 * 16 * 64, 1024], b_shape=[1024], active_func=tf.nn.relu,
+    layer_full = add_layer(input=layer3, w_shape=[19 * 5 * 64, 1024], b_shape=[1024], active_func=tf.nn.relu,
                            name='layer_full')
     # 输出层
     layer_out = add_layer(input=layer_full, w_shape=[1024, LEN_CHAR_SET * LEN_CAPTCHA],
@@ -78,7 +80,7 @@ def train_model():
     # loss 损失数值
     #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output, labels=Y))
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=output, labels=Y))
-    tf.summary.scalar('loss',loss)
+    #tf.summary.scalar('loss',loss)
     # optimizer 为了加快训练 learning_rate 应该开始大，然后慢慢衰
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
     predict = tf.reshape(output, [-1, LEN_CAPTCHA, LEN_CHAR_SET])
@@ -107,20 +109,20 @@ def train_model():
         step = 0
 
         while True:
-            batch_x, batch_y = get_next_batch(1000)
+            batch_x, batch_y = get_next_batch(128)
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
             #print(step, loss_)
 
             # 每100 step计算一次准确率
             if step % 100 == 0:
-                batch_x_test, batch_y_test = get_next_batch(1000)
+                batch_x_test, batch_y_test = get_next_batch(200,img_path=img_test_path)
                 #accuracy = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 #writer.add_summary(result,step)
                 acc=sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.0})
                 # 如果准确率大于99%,保存模型,完成训练
                 print(acc)
                 if acc > 0.90:
-                    saver.save(sess, "./model/crack_capcha.model3", global_step=step)
+                    saver.save(sess, "./model/crack_capcha.model", global_step=step)
                     break
             step += 1
 
@@ -180,8 +182,8 @@ def test():
 
 
 if __name__ == '__main__':
-    #train()
-    test()
+    train()
+    #test()
 
 
 
