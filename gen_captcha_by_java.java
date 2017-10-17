@@ -33,11 +33,11 @@ import java.util.Random;
 		       / (double) frames); 		  
 		   //将(0,i,0+w1,i+1)的区域左右平移(a,0)
 		   g.copyArea(0, i, w1, 1,  (int)left_right, 0); 
-		   if (borderGap) { 
+// 		   if (borderGap) { 
 		    
-		    g.drawLine((int) left_right, i, 0, i); 
-		    g.drawLine((int) left_right + w1, i, w1, i); 
-		   } 
+// 		    g.drawLine((int) left_right, i, 0, i); 
+// 		    g.drawLine((int) left_right + w1, i, w1, i); 
+// 		   } 
 		  } 
 		}
 	//纵向扭曲图片
@@ -54,10 +54,10 @@ import java.util.Random;
 		       / (double) frames); 
 		   //将(i,0,i+1,0+h1)的区域上下平移(a,0)
 		   g.copyArea(i, 0, 1, h1, 0, (int)up_down); 
-		   if (borderGap) { 		   
-		    g.drawLine(i, (int) up_down, i, 0); 
-		    g.drawLine(i, (int) up_down + h1, i, h1); 
-		   } 
+// 		   if (borderGap) { 		   
+// 		    g.drawLine(i, (int) up_down, i, 0); 
+// 		    g.drawLine(i, (int) up_down + h1, i, h1); 
+// 		   } 
 		 
 		  } 		 
 
