@@ -98,15 +98,14 @@ def train_model():
         #merged = tf.summary.merge_all()
         # 选定可视化存储目录
         #writer = tf.summary.FileWriter(r"D:\log\tensorflow", sess.graph)
-
-        tmp = tf.train.latest_checkpoint('model/')
-        saver.restore(sess, tmp)#从模型中读取数据，可以充分利用之前的经验
-        #print(tmp)
-
-        #当直接读取模型时，需要把变量初始化去掉
-        #sess.run(tf.global_variables_initializer())
-
-        step = 0
+        step=0
+        checkpoint = tf.train.latest_checkpoint(modle_dir)        
+        if checkpoint:
+            saver.restore(sess, checkpoint)#从模型中读取数据
+            step=int(checkpoint.split('-')[-1])
+            
+        else:          
+            sess.run(tf.global_variables_initializer())
 
         while True:
             batch_x, batch_y = get_next_batch(128)
@@ -148,9 +147,7 @@ def crack_captcha(captcha_images):
             r=list()
             for index in text:
                 r.append(CHARS[index])
-            text_list.append(r)
-
-        #print('output={}'.format(sess.run(output)))
+            text_list.append(r)     
 
 
         return text_list
@@ -166,14 +163,12 @@ def train():
 
 def test():
     import os
-    dir = img_test_path
-    # dir=r'D:\project\图像识别\image\tmp'
+    dir = img_test_path   
     list_dir = os.listdir(dir)
     img_path = os.path.join(dir, list_dir[0])
     reals = [re.findall(r'_(\w+)\.png', img_name)[0] for img_name in list_dir]
     imgs = [get_img(os.path.join(dir, img_name)) for img_name in list_dir]
     predicts = crack_captcha(imgs)
-    # real=re.findall(r'(\w{4})\.png',img_path)[0]
     for r in zip(predicts, reals, list_dir):
         predict = ''.join([str(i) for i in r[0]])
         print('predic={},real={},img_path={}'.format(predict, r[1], r[2]))
@@ -181,8 +176,8 @@ def test():
 
 
 if __name__ == '__main__':
-    #train()
-    test()
+    train()
+    #test()
 
 
 
